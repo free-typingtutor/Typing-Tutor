@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Typing Tutor – Typing Test</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <header class="site-header">
+    <h1>Typing Tutor</h1>
+    <nav class="nav">
+      <a class="active" href="index.html">Typing Test</a>
+      <a href="practice.html">Practice</a>
+      <a href="lessons.html">Lessons</a>
+      <a href="progress.html">Progress</a>
+      <a href="about.html">About</a>
+    </nav>
+    <div class="toggles">
+      <button id="keyboardToggle" class="secondary">⌨️ Keyboard</button>
+      <button id="themeToggle" class="secondary">🌙 Dark</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <div class="controls">
+        <label for="level">Level:</label>
+        <select id="level">
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+        <button id="startBtn">Start Test</button>
+        <button id="resetBtn" class="ghost">Reset Stats</button>
+      </div>
+
+      <div id="textDisplay" class="text-display" aria-live="polite"></div>
+      <textarea id="textInput" class="text-input" rows="4" placeholder="Start typing here…" spellcheck="false"></textarea>
+
+      <div class="stats-grid">
+        <div class="stat"><div class="label">Current WPM</div><div id="statWPM" class="value">0</div></div>
+        <div class="stat"><div class="label">Accuracy</div><div id="statAcc" class="value">100%</div></div>
+        <div class="stat"><div class="label">Errors</div><div id="statErr" class="value">0</div></div>
+        <div class="stat"><div class="label">Attempts</div><div id="statAttempts" class="value">0</div></div>
+        <div class="stat"><div class="label">Best WPM</div><div id="statBest" class="value">0</div></div>
+        <div class="stat"><div class="label">Average WPM</div><div id="statAvg" class="value">0</div></div>
+      </div>
+    </section>
+
+    <section id="keyboardSection" class="panel">
+      <h3 class="panel-title">Virtual Keyboard</h3>
+      <div id="keyboard" class="keyboard"></div>
+      <div class="legend">
+        <span class="dot ok"></span>low errors
+        <span class="dot mid"></span>medium
+        <span class="dot high"></span>high errors
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">Made with ❤️ for fast & accurate typing.</footer>
+
+  <script src="util.js"></script>
+  <script src="keyboard.js"></script>
+  <script>
+    // ----- PAGE LOGIC: Typing Test -----
+    const textDisplay = document.getElementById('textDisplay');
+    const textInput   = document.getElementById('textInput');
+    const levelSel    = document.getElementById('level');
+    const startBtn    = document.getElementById('startBtn');
+    const resetBtn    = document.getElementById('resetBtn');
+
+    const statWPM  = document.getElementById('statWPM');
+    const statAcc  = document.getElementById('statAcc');
+    const statErr  = document.getElementById('statErr');
+    const statAtt  = document.getElementById('statAttempts');
+    const statBest = document.getElementById('statBest');
+    const statAvg  = document.getElementById('statAvg');
+
+    // Dark mode + keyboard toggle (persisted)
+    initThemeToggle('themeToggle');
+    initKeyboardToggle('keyboardToggle','keyboardSection');
+
+    // Keyboard
+    const kb = Keyboard.render('keyboard'); // returns API
+    // Load persisted heatmap coloring
+    Keyboard.applyHeatmap(kb, Storage.getKeyStats());
+
+    // Test state
+    let targetText = '';
+    let startedAt = null;
+    let timer = null;
+    let lastTypedLen = 0;
+    let correctChars = 0;
+    let totalTyped   = 0;
+    let errorCount   = 0;
+
+    function setTargetText(txt) {
+      targetText = txt;
+      textDisplay.innerHTML = [...txt].map(ch => `<span>${escapeHTML(ch)}</span>`).join('');
+      textInput.value = '';
+      startedAt = null;
+      lastTypedLen = 0;
+      correctChars = 0;
+      totalTyped = 0;
+      errorCount = 0;
+      statWPM.textContent = '0';
+      statAcc.textContent = '100%';
+      statErr.textContent = '0';
+      // prime highlights
+      highlightProgress();
+    }
+
+    function startTest() {
+      const level = levelSel.value;
+      setTargetText(TextBank.getLevelText(level));
+      textInput.focus();
+      if (timer) clearInterval(timer);
+      timer = setInterval(updateLiveStats, 120);
+    }
+
+    function endTest() {
+      if (timer) clearInterval(timer);
+      const elapsedMin = (Date.now() - startedAt) / 60000;
+      const wpm = Math.max(0, Math.round((targetText.length / 5) / Math.max(elapsedMin, 1/60)));
+      const acc = Math.round((correctChars / Math.max(totalTyped, 1)) * 100);
+
+      // persist overall stats
+      Storage.recordAttempt(wpm);
+      // persist WPM to history for progress chart
+      Storage.pushHistoryWPM(wpm);
+      // persist per-key stats heatmap
+      Keyboard.applyHeatmap(kb, Storage.getKeyStats());
+
+      refreshHeadlineStats();
+      // small finish flash
+      textDisplay.classList.add('finished');
+      setTimeout(()=>textDisplay.classList.remove('finished'), 600);
+    }
+
+    function refreshHeadlineStats() {
+      const stats = Storage.getSummary();
+      statAtt.textContent  = stats.attempts;
+      statBest.textContent = stats.bestWPM;
+      statAvg.textContent  = stats.avgWPM;
+    }
+
+    function updateLiveStats() {
+      if (!startedAt) return;
+      const elapsedMin = (Date.now() - startedAt) / 60000;
+      const wpm = Math.round((textInput.value.length/5) / Math.max(elapsedMin, 1/60));
+      const acc = Math.round((correctChars / Math.max(totalTyped, 1)) * 100);
+      statWPM.textContent = isFinite(wpm) ? wpm : 0;
+      statAcc.textContent = isFinite(acc) ? `${acc}%` : '100%';
+      statErr.textContent = errorCount;
+    }
+
+    function highlightProgress() {
+      const spans = textDisplay.querySelectorAll('span');
+      const input = textInput.value;
+      for (let i = 0; i < spans.length; i++) {
+        const ch = input[i];
+        const tgt = spans[i].textContent;
+        if (ch == null) {
+          spans[i].className = '';
+        } else if (ch === tgt) {
+          spans[i].className = 'correct';
+        } else {
+          spans[i].className = 'incorrect';
+        }
+      }
+    }
+
+    textInput.addEventListener('input', () => {
+      if (!startedAt && textInput.value.length > 0) {
+        startedAt = Date.now();
+      }
+      // incremental typing stats
+      const newLen = textInput.value.length;
+      if (newLen > lastTypedLen) {
+        // typed new char(s)
+        const added = textInput.value.slice(lastTypedLen);
+        for (const ch of added) {
+          totalTyped++;
+          const idx = totalTyped - 1;
+          const expected = targetText[idx] ?? '';
+          const isCorrect = ch === expected;
+          if (isCorrect) correctChars++;
+          else errorCount++;
+
+          // per-key stats: count hits + errors for expected key (or typed key)
+          const keyLabel = Keyboard.mapCharToKey(expected || ch);
+          Storage.bumpKeyStats(keyLabel, { hit: true, error: !isCorrect });
+        }
+      } else if (newLen < lastTypedLen) {
+        // backspace: do nothing to stats; keep it simple
+      }
+      lastTypedLen = newLen;
+
+      highlightProgress();
+
+      // done?
+      if (textInput.value === targetText && targetText.length > 0) {
+        endTest();
+      }
+    });
+
+    // Key highlighting
+    document.addEventListener('keydown', (e) => Keyboard.highlightDown(kb, e));
+    document.addEventListener('keyup',   (e) => Keyboard.highlightUp(kb, e));
+
+    // Buttons
+    startBtn.addEventListener('click', startTest);
+    resetBtn.addEventListener('click', () => {
+      if (confirm('Reset all saved stats (attempts, best, history, heatmap)?')) {
+        Storage.resetAll();
+        refreshHeadlineStats();
+        Keyboard.applyHeatmap(kb, Storage.getKeyStats());
+      }
+    });
+
+    // init
+    refreshHeadlineStats();
+    setTargetText('Choose a level and press “Start Test” to begin. Happy typing!');
+
+  </script>
+</body>
+</html>

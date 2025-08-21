@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Typing Tutor – About</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<header class="site-header">
+  <h1>Typing Tutor</h1>
+  <nav class="nav">
+    <a href="index.html">Typing Test</a>
+    <a href="practice.html">Practice</a>
+    <a href="lessons.html">Lessons</a>
+    <a href="progress.html">Progress</a>
+    <a class="active" href="about.html">About</a>
+  </nav>
+  <div class="toggles">
+    <button id="themeToggle" class="secondary">🌙 Dark</button>
+  </div>
+</header>
+
+<main class="container">
+  <section class="panel">
+    <p><strong>Typing Tutor</strong> is a free, privacy-friendly typing course and test platform.</p>
+    <ul class="bullets">
+      <li>Full virtual keyboard with live highlights and per-key heatmap</li>
+      <li>Typing test with levels, WPM, accuracy, errors, attempts, best & average</li>
+      <li>Practice mode with random words, sentences, and custom text</li>
+      <li>Progress page with WPM history chart (stored locally)</li>
+      <li>Dark mode and keyboard visibility toggle</li>
+    </ul>
+    <p>All your data is stored locally in your browser via <code>localStorage</code>.</p>
+  </section>
+</main>
+
+<footer class="site-footer">© 2025 Typing Tutor</footer>
+
+<script src="util.js"></script>
+<script>initThemeToggle('themeToggle');</script>
+</body>
+</html>

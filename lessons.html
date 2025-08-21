@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Typing Tutor – Lessons</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<header class="site-header">
+  <h1>Typing Tutor</h1>
+  <nav class="nav">
+    <a href="index.html">Typing Test</a>
+    <a href="practice.html">Practice</a>
+    <a class="active" href="lessons.html">Lessons</a>
+    <a href="progress.html">Progress</a>
+    <a href="about.html">About</a>
+  </nav>
+  <div class="toggles">
+    <button id="keyboardToggle" class="secondary">⌨️ Keyboard</button>
+    <button id="themeToggle" class="secondary">🌙 Dark</button>
+  </div>
+</header>
+
+<main class="container">
+  <section class="panel">
+    <div class="controls">
+      <label for="lessonSel">Select Lesson:</label>
+      <select id="lessonSel">
+        <option value="beginner">Beginner – Home Row</option>
+        <option value="intermediate">Intermediate – Words & Punctuation</option>
+        <option value="advanced">Advanced – Sentences & Symbols</option>
+      </select>
+      <button id="loadLesson">Load Lesson</button>
+    </div>
+    <div id="textDisplay" class="text-display"></div>
+    <textarea id="textInput" class="text-input" rows="4" placeholder="Type here…" spellcheck="false"></textarea>
+    <p class="hint">Tip: Keep your fingers on the home row (F & J bumps) and keep wrists relaxed.</p>
+  </section>
+
+  <section id="keyboardSection" class="panel">
+    <h3 class="panel-title">Virtual Keyboard</h3>
+    <div id="keyboard" class="keyboard"></div>
+  </section>
+</main>
+
+<footer class="site-footer">Steady drills build muscle memory 💪</footer>
+
+<script src="util.js"></script>
+<script src="keyboard.js"></script>
+<script>
+  initThemeToggle('themeToggle');
+  initKeyboardToggle('keyboardToggle','keyboardSection');
+
+  const kb = Keyboard.render('keyboard');
+  document.addEventListener('keydown', (e)=>Keyboard.highlightDown(kb, e));
+  document.addEventListener('keyup',   (e)=>Keyboard.highlightUp(kb, e));
+
+  const textDisplay = document.getElementById('textDisplay');
+  const textInput   = document.getElementById('textInput');
+  const lessonSel   = document.getElementById('lessonSel');
+
+  function loadLesson() {
+    textDisplay.textContent = TextBank.getLesson(lessonSel.value);
+    textInput.value = '';
+    textInput.focus();
+  }
+
+  document.getElementById('loadLesson').addEventListener('click', loadLesson);
+  loadLesson();
+</script>
+</body>
+</html>
